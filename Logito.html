@@ -1,0 +1,1299 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Legito — OIML R76 Calibration Management</title>
+<style>
+:root{
+  --ink:#101820;
+  --ink-soft:#3a4652;
+  --line:#d7dde2;
+  --line-soft:#e8ecef;
+  --bg:#f3f5f6;
+  --panel:#ffffff;
+  --steel:#2f6690;
+  --steel-dark:#1f4a68;
+  --amber:#b8791a;
+  --amber-bg:#fbf1de;
+  --green:#1f7a4d;
+  --green-bg:#e7f4ec;
+  --red:#b3392c;
+  --red-bg:#fbeae7;
+  --gray-bg:#eef1f2;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; font-family:var(--sans); color:var(--ink); background:var(--bg);
+  font-size:14px; line-height:1.5;
+}
+button{font-family:inherit;}
+input,select,textarea{font-family:inherit; font-size:14px;}
+h1,h2,h3,h4{margin:0; font-weight:600; letter-spacing:-0.01em;}
+table{border-collapse:collapse; width:100%;}
+::selection{background:#c9def0;}
+
+/* ---------- Login ---------- */
+#loginScreen{
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(180deg,#101820 0%,#1c2b38 100%);
+}
+.login-card{
+  width:380px; background:var(--panel); border-radius:2px; padding:36px 32px;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
+}
+.login-brand{display:flex; align-items:baseline; gap:8px; margin-bottom:4px;}
+.login-brand .mark{width:10px;height:10px;background:var(--steel);display:inline-block;}
+.login-brand h1{font-size:19px;}
+.login-sub{color:var(--ink-soft); font-size:12.5px; margin-bottom:26px; border-bottom:1px solid var(--line-soft); padding-bottom:18px;}
+.field{margin-bottom:14px;}
+.field label{display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:5px; text-transform:uppercase; letter-spacing:.04em;}
+.field input,.field select{width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:2px; background:#fff;}
+.field input:focus,.field select:focus,textarea:focus{outline:2px solid var(--steel); outline-offset:1px; border-color:var(--steel);}
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  padding:9px 16px; border-radius:2px; border:1px solid var(--steel-dark);
+  background:var(--steel); color:#fff; font-size:13.5px; font-weight:500; cursor:pointer;
+}
+.btn:hover{background:var(--steel-dark);}
+.btn.secondary{background:#fff; color:var(--ink); border-color:var(--line);}
+.btn.secondary:hover{background:var(--gray-bg);}
+.btn.danger{background:var(--red); border-color:#8f2c21;}
+.btn.danger:hover{background:#8f2c21;}
+.btn.block{width:100%;}
+.btn:disabled{opacity:.45; cursor:not-allowed;}
+.login-error{color:var(--red); font-size:12.5px; margin-top:10px; min-height:14px;}
+.login-hint{margin-top:18px; font-size:11.5px; color:#8a97a1; line-height:1.6; border-top:1px solid var(--line-soft); padding-top:14px;}
+
+/* ---------- App shell ---------- */
+#app{display:none; min-height:100vh; grid-template-columns:220px 1fr;}
+#app.active{display:grid;}
+.sidebar{background:var(--ink); color:#cdd6dc; padding:0; display:flex; flex-direction:column;}
+.side-brand{padding:20px 18px; border-bottom:1px solid #24313c; display:flex; align-items:center; gap:8px;}
+.side-brand .mark{width:9px;height:9px;background:#4d94c4;}
+.side-brand span{color:#fff; font-weight:600; font-size:15px;}
+.side-nav{flex:1; padding:10px 0; overflow-y:auto;}
+.side-nav a{
+  display:flex; align-items:center; gap:10px; padding:9px 18px; color:#aebac2; text-decoration:none; font-size:13.5px;
+  border-left:3px solid transparent; cursor:pointer;
+}
+.side-nav a:hover{background:#182430; color:#fff;}
+.side-nav a.active{background:#182430; color:#fff; border-left-color:#4d94c4;}
+.side-nav .grp{font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:#5c6b76; padding:16px 18px 6px;}
+.side-user{padding:14px 18px; border-top:1px solid #24313c; font-size:12.5px;}
+.side-user .u-name{color:#fff; font-weight:600;}
+.side-user .u-role{color:#8a97a1; font-size:11.5px; margin-top:1px;}
+.side-user button{margin-top:10px; width:100%; background:transparent; border:1px solid #3a4650; color:#cdd6dc; padding:6px; border-radius:2px; cursor:pointer; font-size:12px;}
+.side-user button:hover{background:#182430;}
+
+.main{padding:26px 34px 60px; overflow-x:hidden; max-width:1180px;}
+.page-head{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:22px; gap:16px; flex-wrap:wrap;}
+.page-head h2{font-size:21px;}
+.page-head .sub{color:var(--ink-soft); font-size:12.5px; margin-top:3px;}
+.page-head .actions{display:flex; gap:8px;}
+
+.panel{background:var(--panel); border:1px solid var(--line-soft); border-radius:2px; padding:20px; margin-bottom:18px;}
+.panel h3{font-size:14px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--line-soft);}
+
+/* stat row */
+.stat-row{display:grid; grid-template-columns:repeat(6,1fr); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); margin-bottom:18px;}
+.stat{background:var(--panel); padding:16px 14px;}
+.stat .n{font-size:24px; font-weight:600; font-variant-numeric:tabular-nums;}
+.stat .l{font-size:11px; color:var(--ink-soft); margin-top:3px;}
+.stat.pass .n{color:var(--green);}
+.stat.fail .n{color:var(--red);}
+.stat.pending .n{color:var(--amber);}
+
+.two-col{display:grid; grid-template-columns:1.3fr 1fr; gap:18px;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;} .stat-row{grid-template-columns:repeat(3,1fr);}}
+
+.bar-chart{display:flex; align-items:flex-end; gap:10px; height:140px; padding-top:10px;}
+.bar-chart .col{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;}
+.bar-chart .seg{width:100%; max-width:34px; display:flex; flex-direction:column-reverse;}
+.bar-chart .seg div{width:100%;}
+.bar-chart .lbl{font-size:10.5px; color:var(--ink-soft); margin-top:6px;}
+.bar-chart .val{font-size:10px; color:var(--ink-soft); margin-bottom:3px;}
+
+.activity-item{display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--line-soft); font-size:12.5px;}
+.activity-item:last-child{border-bottom:none;}
+.activity-item .dot{width:6px;height:6px; border-radius:50%; background:var(--steel); margin-top:6px; flex-shrink:0;}
+.activity-item .t{color:#8a97a1; font-size:11px; white-space:nowrap;}
+
+/* tables */
+.data-table th{
+  text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft);
+  padding:9px 12px; border-bottom:1px solid var(--line); background:var(--gray-bg);
+}
+.data-table td{padding:10px 12px; border-bottom:1px solid var(--line-soft); font-size:13px; vertical-align:middle;}
+.data-table tr:hover td{background:#f9fafb;}
+.data-table .num{font-variant-numeric:tabular-nums; font-family:var(--mono); font-size:12.5px;}
+.empty-row td{text-align:center; color:#8a97a1; padding:30px; font-size:13px;}
+
+.badge{display:inline-block; padding:2px 8px; border-radius:2px; font-size:11px; font-weight:600; letter-spacing:.02em;}
+.badge.pass{background:var(--green-bg); color:var(--green);}
+.badge.fail{background:var(--red-bg); color:var(--red);}
+.badge.pending{background:var(--amber-bg); color:var(--amber);}
+.badge.draft{background:var(--gray-bg); color:var(--ink-soft);}
+.badge.approved{background:var(--green-bg); color:var(--green);}
+.badge.role{background:#e7eef4; color:var(--steel-dark);}
+
+.toolbar{display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center;}
+.toolbar input,.toolbar select{padding:8px 10px; border:1px solid var(--line); border-radius:2px; background:#fff;}
+.toolbar input{min-width:180px;}
+.icon-btn{background:transparent; border:1px solid var(--line); border-radius:2px; padding:5px 9px; cursor:pointer; font-size:12px; color:var(--ink-soft);}
+.icon-btn:hover{background:var(--gray-bg); color:var(--ink);}
+
+/* forms */
+.form-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+.form-grid.g3{grid-template-columns:1fr 1fr 1fr;}
+.form-grid.g4{grid-template-columns:1fr 1fr 1fr 1fr;}
+@media(max-width:700px){.form-grid,.form-grid.g3,.form-grid.g4{grid-template-columns:1fr;}}
+.f{display:flex; flex-direction:column; gap:5px;}
+.f label{font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em;}
+.f label .req{color:var(--red);}
+.f input,.f select,.f textarea{padding:8px 10px; border:1px solid var(--line); border-radius:2px; background:#fff; width:100%;}
+.f textarea{resize:vertical; min-height:60px;}
+.f .err{color:var(--red); font-size:11.5px;}
+.f input.invalid,.f select.invalid{border-color:var(--red); background:var(--red-bg);}
+
+.modal-bg{display:none; position:fixed; inset:0; background:rgba(16,24,32,.5); z-index:50; align-items:flex-start; justify-content:center; overflow-y:auto; padding:40px 20px;}
+.modal-bg.active{display:flex;}
+.modal{background:#fff; width:640px; max-width:100%; border-radius:2px; padding:24px 26px 26px;}
+.modal h3{font-size:16px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center;}
+.modal .close{cursor:pointer; color:#8a97a1; font-size:20px; line-height:1;}
+.modal-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:20px; padding-top:16px; border-top:1px solid var(--line-soft);}
+
+/* wizard */
+.steps{display:flex; gap:2px; margin-bottom:22px; flex-wrap:wrap;}
+.steps .step{flex:1; min-width:90px; text-align:center; padding:8px 4px; font-size:11px; background:var(--gray-bg); color:var(--ink-soft); border-bottom:3px solid var(--line);}
+.steps .step.active{background:#e7eef4; color:var(--steel-dark); border-bottom-color:var(--steel); font-weight:600;}
+.steps .step.done{color:var(--green); border-bottom-color:var(--green);}
+
+.obs-table input{width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:2px;}
+.obs-table td{padding:6px;}
+.add-row-btn{margin-top:8px; font-size:12px;}
+
+.calc-out{background:var(--gray-bg); padding:12px 14px; border-radius:2px; font-family:var(--mono); font-size:12.5px; display:grid; grid-template-columns:1fr 1fr; gap:6px 16px;}
+.calc-out .k{color:var(--ink-soft);}
+
+.wizard-nav{display:flex; justify-content:space-between; margin-top:22px; padding-top:16px; border-top:1px solid var(--line-soft);}
+
+/* report doc */
+.report-doc{background:#fff; padding:40px 44px; font-size:13px; color:#1a1a1a;}
+.report-doc h1{font-size:20px; text-align:center; margin-bottom:2px;}
+.report-doc .rd-sub{text-align:center; color:#666; font-size:12px; margin-bottom:22px;}
+.report-doc h4{font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; border-bottom:1.5px solid #1a1a1a; padding-bottom:5px; margin:22px 0 10px;}
+.report-doc table{margin-bottom:6px;}
+.report-doc td,.report-doc th{border:1px solid #ccc; padding:6px 9px; font-size:12px;}
+.report-doc th{background:#f2f2f2; text-align:left;}
+.kv{display:grid; grid-template-columns:1fr 1fr; gap:4px 20px; font-size:12.5px;}
+.kv div span{color:#666;}
+.final-decision{margin-top:18px; padding:14px; text-align:center; font-size:16px; font-weight:700; border:2px solid;}
+.final-decision.pass{border-color:var(--green); color:var(--green); background:var(--green-bg);}
+.final-decision.fail{border-color:var(--red); color:var(--red); background:var(--red-bg);}
+.sig-row{display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-top:30px;}
+.sig-box{border-top:1px solid #999; padding-top:6px; font-size:11.5px; color:#555;}
+
+.wf-track{display:flex; align-items:center; gap:0; margin:6px 0 20px;}
+.wf-node{flex:1; text-align:center; position:relative;}
+.wf-node .dot{width:22px; height:22px; border-radius:50%; background:var(--line); color:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 6px; font-size:11px; font-weight:700;}
+.wf-node.done .dot{background:var(--green);}
+.wf-node.current .dot{background:var(--steel);}
+.wf-node .lbl{font-size:11px; color:var(--ink-soft);}
+.wf-node:not(:last-child)::after{content:""; position:absolute; top:11px; left:calc(50% + 16px); right:calc(-50% + 16px); height:2px; background:var(--line);}
+.wf-node.done:not(:last-child)::after{background:var(--green);}
+
+.help-text{font-size:11.5px; color:#8a97a1; margin-top:2px;}
+.section-note{background:var(--amber-bg); color:#8a5c14; padding:10px 12px; border-radius:2px; font-size:12px; margin-bottom:16px;}
+.empty-state{text-align:center; padding:50px 20px; color:#8a97a1;}
+.empty-state .big{font-size:15px; color:var(--ink-soft); margin-bottom:6px;}
+@media print{
+  .no-print{display:none !important;}
+  #app{display:block !important;}
+  .sidebar{display:none !important;}
+  .main{padding:0; max-width:none;}
+  body{background:#fff;}
+}
+.audit-diff{font-family:var(--mono); font-size:11.5px; color:var(--ink-soft);}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand"><span class="mark"></span><h1>Legito</h1></div>
+    <div class="login-sub">OIML R76 Weighing Instrument Calibration Management</div>
+    <div class="field">
+      <label>Username</label>
+      <input id="loginUser" placeholder="e.g. admin">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="loginPass" type="password" placeholder="••••••••">
+    </div>
+    <button class="btn block" onclick="doLogin()">Sign in</button>
+    <div class="login-error" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <div class="sidebar no-print">
+    <div class="side-brand"><span class="mark"></span><span>Legito</span></div>
+    <div class="side-nav" id="sideNav"></div>
+    <div class="side-user">
+      <div class="u-name" id="curUserName"></div>
+      <div class="u-role" id="curUserRole"></div>
+      <button onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+  <div class="main" id="mainArea"></div>
+</div>
+
+<div class="modal-bg no-print" id="modalBg">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<script>
+/* =========================================================================
+   Legito — OIML R76 Calibration Lab Management
+   Single-file app. Data persisted in localStorage under key 'Legito_db'.
+   ========================================================================= */
+
+const DB_KEY = 'Legito_db';
+const TEST_TYPES = [
+  {id:'visual', name:'Visual Examination'},
+  {id:'zero', name:'Zero Setting Test'},
+  {id:'span', name:'Span Test'},
+  {id:'repeat', name:'Repeatability Test'},
+  {id:'eccentric', name:'Eccentric Loading Test'},
+  {id:'discrimination', name:'Discrimination Test'},
+  {id:'warmup', name:'Warm-up Test'},
+  {id:'stability', name:'Stability Test'},
+  {id:'environmental', name:'Environmental Tests'},
+  {id:'software', name:'Software Examination'},
+];
+const ROLES = ['Admin','Laboratory Engineer','Reviewer','Approver'];
+const WF_STAGES = ['Draft','Engineer Completed','Reviewer','Approver','Approved'];
+
+// Simplified OIML R76 MPE table: MPE in units of "e", by load band (in e) and accuracy class.
+// initial verification values; in-service = x2. This is a configurable starting point —
+// verify against your current OIML R76 edition / national regulation before formal use.
+const DEFAULT_MPE_TABLE = [
+  {accuracyClass:'I',    band:'0–50,000e',     minE:0,     maxE:50000,  mpeE:0.5},
+  {accuracyClass:'I',    band:'50,000–200,000e', minE:50000, maxE:200000, mpeE:1.0},
+  {accuracyClass:'I',    band:'>200,000e',     minE:200000,maxE:Infinity,mpeE:1.5},
+  {accuracyClass:'II',   band:'0–5,000e',      minE:0,     maxE:5000,   mpeE:0.5},
+  {accuracyClass:'II',   band:'5,000–20,000e', minE:5000,  maxE:20000,  mpeE:1.0},
+  {accuracyClass:'II',   band:'>20,000e',      minE:20000, maxE:Infinity,mpeE:1.5},
+  {accuracyClass:'III',  band:'0–500e',        minE:0,     maxE:500,    mpeE:0.5},
+  {accuracyClass:'III',  band:'500–2,000e',    minE:500,   maxE:2000,   mpeE:1.0},
+  {accuracyClass:'III',  band:'>2,000e',       minE:2000,  maxE:Infinity,mpeE:1.5},
+  {accuracyClass:'IIII', band:'0–50e',         minE:0,     maxE:50,     mpeE:0.5},
+  {accuracyClass:'IIII', band:'50–200e',       minE:50,    maxE:200,    mpeE:1.0},
+  {accuracyClass:'IIII', band:'>200e',         minE:200,   maxE:Infinity,mpeE:1.5},
+];
+
+let DB = null;
+let CUR_USER = null;
+let ROUTE = {page:'dashboard', params:{}};
+
+// ---------------- persistence ----------------
+function loadDB(){
+  let raw = null;
+  try{ raw = localStorage.getItem(DB_KEY); }catch(e){}
+  if(raw){ try{ return JSON.parse(raw); }catch(e){} }
+  return seedDB();
+}
+function saveDB(){
+  try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){ console.warn('persist failed', e); }
+}
+function uid(prefix){ return prefix+'-'+Math.random().toString(36).slice(2,9); }
+function nowStr(){ return new Date().toISOString(); }
+function fmtDate(iso){ if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtDateTime(iso){ if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+
+function seedDB(){
+  const db = {
+    users:[
+      {id:uid('u'), username:'admin', password:'admin123', name:'Anand', role:'Admin'},
+      {id:uid('u'), username:'engineer', password:'eng123', name:'Rohit', role:'Laboratory Engineer'},
+      {id:uid('u'), username:'reviewer', password:'rev123', name:'Arun', role:'Reviewer'},
+      {id:uid('u'), username:'approver', password:'app123', name:'Bharath', role:'Approver'},
+    ],
+    manufacturers:[
+      {id:uid('mf'), name:'Precision Scales Ltd', address:'14 Foundry Rd, Coventry, UK', contact:'James Ellwood', phone:'+44 24 7601 2233', email:'sales@precisionscales.co.uk', country:'United Kingdom', license:'PSL-2019-441'},
+      {id:uid('mf'), name:'Meissen Wägetechnik GmbH', address:'Industriestrasse 9, Meissen, Germany', contact:'Greta Fuchs', phone:'+49 3521 40021', email:'info@meissen-waeg.de', country:'Germany', license:'MWG-2011-07'},
+    ],
+    instruments:[],
+    reports:[],
+    auditLog:[],
+    settings:{ mpeTable: DEFAULT_MPE_TABLE, ruleVersion:'OIML R76-1:2006 (ed. 2006)', labs:['Central Metrology Lab', 'Mobile Verification Unit 2'] },
+  };
+  db.instruments.push({
+    id:uid('in'), manufacturerId: db.manufacturers[0].id, name:'Precision Bench Balance PB-620', type:'Non-automatic weighing instrument',
+    model:'PB-620', serial:'SN-2024-08831', capacity:'620', minCapacity:'0.02', e:'0.01', accuracyClass:'II',
+    display:'Digital LCD', power:'AC/Battery', softwareVersion:'v3.2.1', firmwareVersion:'FW-1.0.7',
+  });
+  db.instruments.push({
+    id:uid('in'), manufacturerId: db.manufacturers[1].id, name:'Platform Scale WT-3000', type:'Non-automatic weighing instrument',
+    model:'WT-3000', serial:'SN-2023-11290', capacity:'3000', minCapacity:'1', e:'0.5', accuracyClass:'III',
+    display:'Digital LED', power:'AC', softwareVersion:'v2.0.0', firmwareVersion:'FW-2.4.0',
+  });
+  return db;
+}
+
+function logAction(action, detail){
+  DB.auditLog.unshift({id:uid('a'), userId:CUR_USER?CUR_USER.id:null, userName:CUR_USER?CUR_USER.name:'System', action, detail, time:nowStr()});
+  if(DB.auditLog.length>500) DB.auditLog.length=500;
+}
+
+// ---------------- auth ----------------
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
+  const user = DB.users.find(x=>x.username===u && x.password===p);
+  const errEl = document.getElementById('loginErr');
+  if(!user){ errEl.textContent='Incorrect username or password.'; return; }
+  errEl.textContent='';
+  CUR_USER = user;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').classList.add('active');
+  logAction('Login', user.name+' signed in');
+  saveDB();
+  navigate('dashboard');
+}
+function doLogout(){
+  logAction('Logout', CUR_USER.name+' signed out');
+  saveDB();
+  CUR_USER=null;
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+}
+
+// ---------------- nav ----------------
+const NAV = [
+  {grp:'Overview', items:[{id:'dashboard', label:'Dashboard'}]},
+  {grp:'Registry', items:[{id:'manufacturers', label:'Manufacturers'},{id:'instruments', label:'Instruments'}]},
+  {grp:'Testing', items:[{id:'newreport', label:'New Report'},{id:'repository', label:'Report Repository'}]},
+  {grp:'Oversight', items:[{id:'audit', label:'Audit Trail'}]},
+  {grp:'Admin', items:[{id:'settings', label:'Settings', adminOnly:true}]},
+];
+function renderNav(){
+  const el=document.getElementById('sideNav'); el.innerHTML='';
+  NAV.forEach(g=>{
+    const items = g.items.filter(it=> !it.adminOnly || CUR_USER.role==='Admin');
+    if(!items.length) return;
+    const h=document.createElement('div'); h.className='grp'; h.textContent=g.grp; el.appendChild(h);
+    items.forEach(it=>{
+      const a=document.createElement('a');
+      a.textContent=it.label;
+      a.className = ROUTE.page===it.id ? 'active':'';
+      a.onclick=()=>navigate(it.id);
+      el.appendChild(a);
+    });
+  });
+  document.getElementById('curUserName').textContent=CUR_USER.name;
+  document.getElementById('curUserRole').textContent=CUR_USER.role;
+}
+function navigate(page, params){
+  ROUTE={page, params:params||{}};
+  renderNav();
+  render();
+  window.scrollTo(0,0);
+}
+
+function esc(s){ return (s===undefined||s===null)?'':String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ---------------- modal helper ----------------
+function openModal(html){
+  document.getElementById('modalBody').innerHTML=html;
+  document.getElementById('modalBg').classList.add('active');
+}
+function closeModal(){ document.getElementById('modalBg').classList.remove('active'); document.getElementById('modalBody').innerHTML=''; }
+
+// ---------------- render dispatch ----------------
+function render(){
+  const m=document.getElementById('mainArea');
+  switch(ROUTE.page){
+    case 'dashboard': m.innerHTML=pageDashboard(); afterDashboard(); break;
+    case 'manufacturers': m.innerHTML=pageManufacturers(); break;
+    case 'instruments': m.innerHTML=pageInstruments(); break;
+    case 'newreport': m.innerHTML=pageNewReport(); afterWizard(); break;
+    case 'repository': m.innerHTML=pageRepository(); break;
+    case 'reportview': m.innerHTML=pageReportView(ROUTE.params.id); break;
+    case 'audit': m.innerHTML=pageAudit(); break;
+    case 'settings': m.innerHTML=pageSettings(); break;
+    default: m.innerHTML='<div class="empty-state">Not found</div>';
+  }
+}
+
+/* =========================================================================
+   DASHBOARD
+   ========================================================================= */
+function pageDashboard(){
+  const reports = DB.reports;
+  const inProgress = reports.filter(r=>r.status!=='Approved').length;
+  const completed = reports.filter(r=>r.status==='Approved').length;
+  const pendingReview = reports.filter(r=>r.status==='Engineer Completed'||r.status==='Reviewer').length;
+  const failed = reports.filter(r=>r.finalDecision==='FAIL').length;
+  const passed = reports.filter(r=>r.finalDecision==='PASS').length;
+
+  // monthly stats last 6 months
+  const months=[];
+  const now=new Date();
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push({key:d.getFullYear()+'-'+d.getMonth(), label:d.toLocaleDateString('en-GB',{month:'short'}), pass:0, fail:0});
+  }
+  reports.forEach(r=>{
+    const d=new Date(r.createdAt);
+    const key=d.getFullYear()+'-'+d.getMonth();
+    const mo=months.find(m=>m.key===key);
+    if(mo){ if(r.finalDecision==='PASS') mo.pass++; else if(r.finalDecision==='FAIL') mo.fail++; }
+  });
+  const maxVal = Math.max(1, ...months.map(m=>m.pass+m.fail));
+
+  const recent = DB.auditLog.slice(0,8);
+
+  return `
+  <div class="page-head">
+    <div><h2>Dashboard</h2><div class="sub">Overview of calibration activity</div></div>
+  </div>
+  <div class="stat-row">
+    <div class="stat"><div class="n">${DB.instruments.length}</div><div class="l">Total Instruments</div></div>
+    <div class="stat pending"><div class="n">${inProgress}</div><div class="l">Tests in Progress</div></div>
+    <div class="stat pass"><div class="n">${completed}</div><div class="l">Completed Reports</div></div>
+    <div class="stat pending"><div class="n">${pendingReview}</div><div class="l">Pending Reviews</div></div>
+    <div class="stat fail"><div class="n">${failed}</div><div class="l">Failed Tests</div></div>
+    <div class="stat"><div class="n">${reports.length}</div><div class="l">Total Reports</div></div>
+  </div>
+  <div class="two-col">
+    <div class="panel">
+      <h3>Monthly Statistics — Pass vs Fail</h3>
+      <div class="bar-chart">
+        ${months.map(m=>{
+          const h = 110;
+          const passH = m.pass/maxVal*h, failH=m.fail/maxVal*h;
+          return `<div class="col">
+            <div class="seg" style="height:${h}px; justify-content:flex-end;">
+              <div style="height:${failH}px;background:var(--red);" title="Fail: ${m.fail}"></div>
+              <div style="height:${passH}px;background:var(--green);" title="Pass: ${m.pass}"></div>
+            </div>
+            <div class="lbl">${m.label}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:var(--ink-soft);">
+        <span><span style="display:inline-block;width:9px;height:9px;background:var(--green);margin-right:5px;"></span>Pass (${passed})</span>
+        <span><span style="display:inline-block;width:9px;height:9px;background:var(--red);margin-right:5px;"></span>Fail (${failed})</span>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Recent Activity</h3>
+      <div id="recentActivity">
+      ${recent.length? recent.map(a=>`
+        <div class="activity-item"><div class="dot"></div>
+          <div style="flex:1;"><div>${esc(a.action)}</div><div style="color:#8a97a1;">${esc(a.detail||'')}</div></div>
+          <div class="t">${fmtDateTime(a.time)}</div>
+        </div>`).join('') : '<div class="empty-state" style="padding:20px;">No activity yet</div>'}
+      </div>
+    </div>
+  </div>`;
+}
+function afterDashboard(){}
+
+/* =========================================================================
+   MANUFACTURERS
+   ========================================================================= */
+function pageManufacturers(){
+  const rows = DB.manufacturers;
+  return `
+  <div class="page-head">
+    <div><h2>Manufacturer Management</h2><div class="sub">${rows.length} manufacturer${rows.length===1?'':'s'} on file</div></div>
+    <div class="actions"><button class="btn" onclick="openManufacturerForm()">+ New Manufacturer</button></div>
+  </div>
+  <div class="panel" style="padding:0;">
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Country</th><th>Contact Person</th><th>Phone</th><th>Email</th><th>License No.</th><th></th></tr></thead>
+      <tbody>
+        ${rows.length? rows.map(r=>`
+          <tr>
+            <td><strong>${esc(r.name)}</strong><div style="color:#8a97a1;font-size:11.5px;">${esc(r.address||'')}</div></td>
+            <td>${esc(r.country)}</td>
+            <td>${esc(r.contact)}</td>
+            <td class="num">${esc(r.phone)}</td>
+            <td>${esc(r.email)}</td>
+            <td class="num">${esc(r.license)}</td>
+            <td><button class="icon-btn" onclick="openManufacturerForm('${r.id}')">Edit</button>
+                <button class="icon-btn" onclick="deleteManufacturer('${r.id}')">Delete</button></td>
+          </tr>`).join('') : `<tr class="empty-row"><td colspan="7">No manufacturers yet — add one to get started.</td></tr>`}
+      </tbody>
+    </table>
+  </div>`;
+}
+function openManufacturerForm(id){
+  const m = id ? DB.manufacturers.find(x=>x.id===id) : null;
+  openModal(`
+    <h3>${m?'Edit Manufacturer':'New Manufacturer'} <span class="close" onclick="closeModal()">&times;</span></h3>
+    <div class="form-grid">
+      <div class="f"><label>Manufacturer Name <span class="req">*</span></label><input id="mf_name" value="${esc(m?m.name:'')}"></div>
+      <div class="f"><label>Country <span class="req">*</span></label><input id="mf_country" value="${esc(m?m.country:'')}"></div>
+      <div class="f" style="grid-column:1/-1;"><label>Address</label><input id="mf_address" value="${esc(m?m.address:'')}"></div>
+      <div class="f"><label>Contact Person</label><input id="mf_contact" value="${esc(m?m.contact:'')}"></div>
+      <div class="f"><label>License Number</label><input id="mf_license" value="${esc(m?m.license:'')}"></div>
+      <div class="f"><label>Phone</label><input id="mf_phone" value="${esc(m?m.phone:'')}"></div>
+      <div class="f"><label>Email</label><input id="mf_email" value="${esc(m?m.email:'')}"></div>
+    </div>
+    <div id="mf_err" class="f"><span class="err"></span></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveManufacturer('${id||''}')">Save</button>
+    </div>
+  `);
+}
+function saveManufacturer(id){
+  const name=document.getElementById('mf_name').value.trim();
+  const country=document.getElementById('mf_country').value.trim();
+  if(!name || !country){ document.querySelector('#mf_err .err').textContent='Name and country are required.'; return; }
+  const data={
+    name, country,
+    address:document.getElementById('mf_address').value.trim(),
+    contact:document.getElementById('mf_contact').value.trim(),
+    license:document.getElementById('mf_license').value.trim(),
+    phone:document.getElementById('mf_phone').value.trim(),
+    email:document.getElementById('mf_email').value.trim(),
+  };
+  if(id){
+    Object.assign(DB.manufacturers.find(x=>x.id===id), data);
+    logAction('Manufacturer updated', name);
+  }else{
+    DB.manufacturers.push({id:uid('mf'), ...data});
+    logAction('Manufacturer created', name);
+  }
+  saveDB(); closeModal(); render();
+}
+function deleteManufacturer(id){
+  const inUse = DB.instruments.some(i=>i.manufacturerId===id);
+  if(inUse){ alert('This manufacturer has registered instruments and cannot be deleted.'); return; }
+  const mf=DB.manufacturers.find(x=>x.id===id);
+  if(!confirm('Delete manufacturer "'+mf.name+'"?')) return;
+  DB.manufacturers = DB.manufacturers.filter(x=>x.id!==id);
+  logAction('Manufacturer deleted', mf.name);
+  saveDB(); render();
+}
+
+/* =========================================================================
+   INSTRUMENTS
+   ========================================================================= */
+function pageInstruments(){
+  const rows = DB.instruments;
+  return `
+  <div class="page-head">
+    <div><h2>Instrument Registration</h2><div class="sub">${rows.length} instrument${rows.length===1?'':'s'} registered</div></div>
+    <div class="actions"><button class="btn" onclick="openInstrumentForm()">+ Register Instrument</button></div>
+  </div>
+  <div class="panel" style="padding:0;">
+    <table class="data-table">
+      <thead><tr><th>Instrument</th><th>Manufacturer</th><th>Model / Serial</th><th>Capacity</th><th>e</th><th>Class</th><th></th></tr></thead>
+      <tbody>
+        ${rows.length? rows.map(r=>{
+          const mf = DB.manufacturers.find(x=>x.id===r.manufacturerId);
+          return `<tr>
+            <td><strong>${esc(r.name)}</strong><div style="color:#8a97a1;font-size:11.5px;">${esc(r.type||'')}</div></td>
+            <td>${esc(mf?mf.name:'—')}</td>
+            <td class="num">${esc(r.model)} / ${esc(r.serial)}</td>
+            <td class="num">${esc(r.capacity)}</td>
+            <td class="num">${esc(r.e)}</td>
+            <td><span class="badge role">Class ${esc(r.accuracyClass)}</span></td>
+            <td><button class="icon-btn" onclick="openInstrumentForm('${r.id}')">Edit</button>
+                <button class="icon-btn" onclick="navigate('newreport',{instrumentId:'${r.id}'})">New Report</button></td>
+          </tr>`;
+        }).join('') : `<tr class="empty-row"><td colspan="7">No instruments yet — register one to begin testing.</td></tr>`}
+      </tbody>
+    </table>
+  </div>`;
+}
+function openInstrumentForm(id){
+  const it = id ? DB.instruments.find(x=>x.id===id) : null;
+  const mfOptions = DB.manufacturers.map(m=>`<option value="${m.id}" ${it&&it.manufacturerId===m.id?'selected':''}>${esc(m.name)}</option>`).join('');
+  openModal(`
+    <h3>${it?'Edit Instrument':'Register Instrument'} <span class="close" onclick="closeModal()">&times;</span></h3>
+    <div class="form-grid g3">
+      <div class="f" style="grid-column:1/-1;"><label>Instrument Name <span class="req">*</span></label><input id="in_name" value="${esc(it?it.name:'')}"></div>
+      <div class="f"><label>Manufacturer <span class="req">*</span></label><select id="in_mf">${mfOptions||'<option value="">No manufacturers — add one first</option>'}</select></div>
+      <div class="f"><label>Instrument Type</label><input id="in_type" value="${esc(it?it.type:'Non-automatic weighing instrument')}"></div>
+      <div class="f"><label>Accuracy Class <span class="req">*</span></label>
+        <select id="in_class">${['I','II','III','IIII'].map(c=>`<option ${it&&it.accuracyClass===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="f"><label>Model Number</label><input id="in_model" value="${esc(it?it.model:'')}"></div>
+      <div class="f"><label>Serial Number <span class="req">*</span></label><input id="in_serial" value="${esc(it?it.serial:'')}"></div>
+      <div class="f"><label>Capacity (Max) <span class="req">*</span></label><input id="in_capacity" type="number" step="any" value="${esc(it?it.capacity:'')}"></div>
+      <div class="f"><label>Minimum Capacity</label><input id="in_mincap" type="number" step="any" value="${esc(it?it.minCapacity:'')}"></div>
+      <div class="f"><label>Verification Scale Interval (e) <span class="req">*</span></label><input id="in_e" type="number" step="any" value="${esc(it?it.e:'')}"></div>
+      <div class="f"><label>Display Type</label><input id="in_display" value="${esc(it?it.display:'')}"></div>
+      <div class="f"><label>Power Supply</label><input id="in_power" value="${esc(it?it.power:'')}"></div>
+      <div class="f"><label>Software Version</label><input id="in_sw" value="${esc(it?it.softwareVersion:'')}"></div>
+      <div class="f"><label>Firmware Version</label><input id="in_fw" value="${esc(it?it.firmwareVersion:'')}"></div>
+    </div>
+    <div id="in_err" class="f"><span class="err"></span></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveInstrument('${id||''}')">Save</button>
+    </div>
+  `);
+}
+function saveInstrument(id){
+  const name=document.getElementById('in_name').value.trim();
+  const mf=document.getElementById('in_mf').value;
+  const serial=document.getElementById('in_serial').value.trim();
+  const capacity=document.getElementById('in_capacity').value;
+  const e=document.getElementById('in_e').value;
+  if(!name||!mf||!serial||!capacity||!e){ document.querySelector('#in_err .err').textContent='Please complete all required fields.'; return; }
+  if(DB.instruments.some(x=>x.serial===serial && x.id!==id)){ document.querySelector('#in_err .err').textContent='Serial number already registered (duplicate entry).'; return; }
+  const data={
+    name, manufacturerId:mf, type:document.getElementById('in_type').value.trim(),
+    accuracyClass:document.getElementById('in_class').value,
+    model:document.getElementById('in_model').value.trim(), serial,
+    capacity, minCapacity:document.getElementById('in_mincap').value, e,
+    display:document.getElementById('in_display').value.trim(),
+    power:document.getElementById('in_power').value.trim(),
+    softwareVersion:document.getElementById('in_sw').value.trim(),
+    firmwareVersion:document.getElementById('in_fw').value.trim(),
+  };
+  if(id){ Object.assign(DB.instruments.find(x=>x.id===id), data); logAction('Instrument updated', name); }
+  else{ DB.instruments.push({id:uid('in'), ...data}); logAction('Instrument registered', name+' ('+serial+')'); }
+  saveDB(); closeModal(); render();
+}
+
+/* =========================================================================
+   CALCULATION / COMPLIANCE ENGINE
+   ========================================================================= */
+function getMPEBand(accuracyClass, loadInE){
+  const table = DB.settings.mpeTable;
+  return table.find(r=> r.accuracyClass===accuracyClass && loadInE>=r.minE && loadInE<r.maxE);
+}
+// observed = measured value, nominal = applied/reference value, eValue = instrument's e, inService = bool
+function calcTestRow(nominal, observed, accuracyClass, eValue, inService){
+  nominal = parseFloat(nominal); observed = parseFloat(observed); eValue = parseFloat(eValue);
+  if(isNaN(nominal)||isNaN(observed)||isNaN(eValue)||eValue<=0){
+    return {valid:false};
+  }
+  const observedError = observed - nominal; // in same units
+  const loadInE = Math.abs(nominal)/eValue;
+  const band = getMPEBand(accuracyClass, loadInE);
+  const mult = inService?2:1;
+  const mpeInE = band ? band.mpeE*mult : null;
+  const mpeValue = mpeInE!==null ? mpeInE*eValue : null;
+  const absError = Math.abs(observedError);
+  const pass = mpeValue!==null ? absError <= mpeValue : null;
+  return {valid:true, observedError, absError, loadInE, mpeInE, mpeValue, pass, band: band?band.band:'—'};
+}
+
+/* =========================================================================
+   NEW REPORT WIZARD
+   ========================================================================= */
+let WIZ = null; // in-progress wizard state
+function freshWizard(instrumentId){
+  return {
+    step:0,
+    instrumentId: instrumentId || '',
+    lab:{ laboratory: DB.settings.labs[0]||'', engineer: CUR_USER.name, date:new Date().toISOString().slice(0,10),
+          temperature:'20', humidity:'50', pressure:'1013', voltage:'230', duration:'' },
+    inService:false,
+    tests:{}, // testId -> {observations:[{nominal,observed}], remark}
+    remarksEngineer:'',
+  };
+}
+function pageNewReport(){
+  if(!WIZ){
+    const pre = ROUTE.params.instrumentId || '';
+    WIZ = freshWizard(pre);
+  }
+  const steps = ['Instrument','Lab Conditions', ...TEST_TYPES.map(t=>t.name), 'Review & Submit'];
+  const instrOptions = DB.instruments.map(i=>`<option value="${i.id}" ${WIZ.instrumentId===i.id?'selected':''}>${esc(i.name)} — ${esc(i.serial)}</option>`).join('');
+
+  let body='';
+  if(WIZ.step===0){
+    body = `
+      <div class="panel">
+        <h3>Select Instrument</h3>
+        ${DB.instruments.length? `
+        <div class="form-grid">
+          <div class="f" style="grid-column:1/-1;">
+            <label>Instrument <span class="req">*</span></label>
+            <select id="wiz_instrument">${instrOptions}</select>
+          </div>
+        </div>
+        <div id="instrumentPreview" style="margin-top:16px;"></div>
+        ` : `<div class="empty-state"><div class="big">No instruments registered</div>Register an instrument first before creating a test report.<br><br><button class="btn" onclick="navigate('instruments')">Go to Instruments</button></div>`}
+      </div>`;
+  } else if(WIZ.step===1){
+    const l=WIZ.lab;
+    body = `
+      <div class="panel">
+        <h3>Laboratory Information</h3>
+        <div class="form-grid g3">
+          <div class="f"><label>Laboratory <span class="req">*</span></label>
+            <select id="lb_lab">${DB.settings.labs.map(x=>`<option ${l.laboratory===x?'selected':''}>${esc(x)}</option>`).join('')}</select></div>
+          <div class="f"><label>Engineer</label><input id="lb_eng" value="${esc(l.engineer)}"></div>
+          <div class="f"><label>Date <span class="req">*</span></label><input id="lb_date" type="date" value="${esc(l.date)}"></div>
+          <div class="f"><label>Temperature (°C) <span class="req">*</span></label><input id="lb_temp" type="number" step="any" value="${esc(l.temperature)}"></div>
+          <div class="f"><label>Humidity (%RH) <span class="req">*</span></label><input id="lb_hum" type="number" step="any" value="${esc(l.humidity)}"></div>
+          <div class="f"><label>Pressure (hPa)</label><input id="lb_pres" type="number" step="any" value="${esc(l.pressure)}"></div>
+          <div class="f"><label>Voltage (V)</label><input id="lb_volt" type="number" step="any" value="${esc(l.voltage)}"></div>
+          <div class="f"><label>Test Duration (min)</label><input id="lb_dur" type="number" step="any" value="${esc(l.duration)}"></div>
+          <div class="f"><label>Verification Type</label>
+            <select id="lb_inservice"><option value="false" ${!WIZ.inService?'selected':''}>Initial Verification</option><option value="true" ${WIZ.inService?'selected':''}>In-Service Verification (MPE ×2)</option></select></div>
+        </div>
+        <div class="section-note">Environmental limits: temperature 15–30°C and humidity 20–80%RH are typical acceptable ranges — out-of-range values will be flagged by the validation engine.</div>
+      </div>`;
+  } else if(WIZ.step>=2 && WIZ.step < 2+TEST_TYPES.length){
+    const t = TEST_TYPES[WIZ.step-2];
+    body = renderTestForm(t);
+  } else {
+    body = renderReviewStep();
+  }
+
+  return `
+  <div class="page-head">
+    <div><h2>New Calibration Report</h2><div class="sub">${steps[WIZ.step]}</div></div>
+    <div class="actions"><button class="btn secondary" onclick="cancelWizard()">Cancel</button></div>
+  </div>
+  <div class="steps no-print">
+    ${steps.map((s,i)=>`<div class="step ${i===WIZ.step?'active':i<WIZ.step?'done':''}">${i+1}. ${s}</div>`).join('')}
+  </div>
+  ${body}
+  <div class="wizard-nav no-print">
+    <button class="btn secondary" ${WIZ.step===0?'disabled':''} onclick="wizPrev()">← Back</button>
+    ${WIZ.step<steps.length-1 ? `<button class="btn" onclick="wizNext()">Continue →</button>` : `<button class="btn" onclick="submitReport()">Submit Report</button>`}
+  </div>`;
+}
+function afterWizard(){
+  if(WIZ.step===0 && WIZ.instrumentId){ renderInstrumentPreview(); }
+}
+function renderInstrumentPreview(){
+  const el=document.getElementById('instrumentPreview'); if(!el) return;
+  const inst = DB.instruments.find(i=>i.id===WIZ.instrumentId);
+  if(!inst){ el.innerHTML=''; return; }
+  const mf = DB.manufacturers.find(m=>m.id===inst.manufacturerId);
+  el.innerHTML = `<div class="calc-out">
+    <div><span class="k">Model / Serial</span></div><div>${esc(inst.model)} / ${esc(inst.serial)}</div>
+    <div><span class="k">Manufacturer</span></div><div>${esc(mf?mf.name:'—')}</div>
+    <div><span class="k">Capacity / Min</span></div><div>${esc(inst.capacity)} / ${esc(inst.minCapacity)}</div>
+    <div><span class="k">e (interval)</span></div><div>${esc(inst.e)}</div>
+    <div><span class="k">Accuracy Class</span></div><div>${esc(inst.accuracyClass)}</div>
+  </div>`;
+}
+document.addEventListener('change', function(e){
+  if(e.target && e.target.id==='wiz_instrument'){ WIZ.instrumentId=e.target.value; renderInstrumentPreview(); }
+});
+
+function renderTestForm(t){
+  if(!WIZ.tests[t.id]) WIZ.tests[t.id] = {observations:[{nominal:'',observed:''}], remark:'', notApplicable:false};
+  const st = WIZ.tests[t.id];
+  const inst = DB.instruments.find(i=>i.id===WIZ.instrumentId);
+  const needsCalc = !['visual','software','environmental'].includes(t.id);
+  let rowsHtml='';
+  if(needsCalc){
+    rowsHtml = st.observations.map((o,idx)=>{
+      const calc = inst ? calcTestRow(o.nominal,o.observed,inst.accuracyClass,inst.e,WIZ.inService) : {valid:false};
+      return `<tr>
+        <td><input type="number" step="any" value="${esc(o.nominal)}" onchange="updateObs('${t.id}',${idx},'nominal',this.value)" placeholder="Nominal / applied"></td>
+        <td><input type="number" step="any" value="${esc(o.observed)}" onchange="updateObs('${t.id}',${idx},'observed',this.value)" placeholder="Observed reading"></td>
+        <td class="num">${calc.valid? calc.observedError.toFixed(4): '—'}</td>
+        <td class="num">${calc.valid && calc.mpeValue!==null ? calc.mpeValue.toFixed(4): '—'}</td>
+        <td>${calc.valid && calc.pass!==null ? `<span class="badge ${calc.pass?'pass':'fail'}">${calc.pass?'PASS':'FAIL'}</span>` : '<span class="badge pending">—</span>'}</td>
+        <td><button class="icon-btn" onclick="removeObs('${t.id}',${idx})">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+  return `
+  <div class="panel">
+    <h3>${esc(t.name)}</h3>
+    ${!inst ? `<div class="section-note">Select an instrument in Step 1 to enable automatic MPE calculation.</div>`:''}
+    ${needsCalc ? `
+    <table class="data-table obs-table">
+      <thead><tr><th>Nominal / Applied</th><th>Observed Reading</th><th>Error</th><th>MPE</th><th>Result</th><th></th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <button class="btn secondary add-row-btn" onclick="addObs('${t.id}')">+ Add Observation</button>
+    ` : `
+    <div class="f">
+      <label>Observation Notes</label>
+      <textarea onchange="WIZ.tests['${t.id}'].remark=this.value" placeholder="Record findings for ${esc(t.name.toLowerCase())}...">${esc(st.remark)}</textarea>
+    </div>
+    `}
+    <div class="f" style="margin-top:14px;">
+      <label>Engineer Remark</label>
+      <textarea onchange="WIZ.tests['${t.id}'].engRemark=this.value" placeholder="Optional notes...">${esc(st.engRemark||'')}</textarea>
+    </div>
+  </div>`;
+}
+function addObs(testId){ WIZ.tests[testId].observations.push({nominal:'',observed:''}); render(); }
+function removeObs(testId, idx){ WIZ.tests[testId].observations.splice(idx,1); if(!WIZ.tests[testId].observations.length) WIZ.tests[testId].observations.push({nominal:'',observed:''}); render(); }
+function updateObs(testId, idx, field, val){ WIZ.tests[testId].observations[idx][field]=val; render(); }
+
+function computeOverallResult(){
+  const inst = DB.instruments.find(i=>i.id===WIZ.instrumentId);
+  let anyFail=false, anyChecked=false;
+  TEST_TYPES.forEach(t=>{
+    const st=WIZ.tests[t.id]; if(!st) return;
+    st.observations.forEach(o=>{
+      if(o.nominal==='' || o.observed==='') return;
+      const c = inst? calcTestRow(o.nominal,o.observed,inst.accuracyClass,inst.e,WIZ.inService):{valid:false};
+      if(c.valid && c.pass!==null){ anyChecked=true; if(!c.pass) anyFail=true; }
+    });
+  });
+  return anyChecked ? (anyFail?'FAIL':'PASS') : 'INCOMPLETE';
+}
+function renderReviewStep(){
+  const inst = DB.instruments.find(i=>i.id===WIZ.instrumentId);
+  const result = computeOverallResult();
+  // validation checks
+  const errors=[];
+  if(!WIZ.instrumentId) errors.push('No instrument selected.');
+  if(!WIZ.lab.temperature || WIZ.lab.temperature<15 || WIZ.lab.temperature>30) errors.push('Temperature is outside the accepted 15–30°C environmental range.');
+  if(!WIZ.lab.humidity || WIZ.lab.humidity<20 || WIZ.lab.humidity>80) errors.push('Humidity is outside the accepted 20–80%RH environmental range.');
+  let hasAnyObservation=false;
+  TEST_TYPES.forEach(t=>{
+    const st=WIZ.tests[t.id];
+    if(st) st.observations.forEach(o=>{ if(o.nominal!=='' && o.observed!=='') hasAnyObservation=true; });
+  });
+  if(!hasAnyObservation) errors.push('No test observations recorded across any module.');
+
+  return `
+  <div class="panel">
+    <h3>Review Summary</h3>
+    <div class="kv">
+      <div><span>Instrument:</span> ${inst?esc(inst.name)+' ('+esc(inst.serial)+')':'—'}</div>
+      <div><span>Laboratory:</span> ${esc(WIZ.lab.laboratory)}</div>
+      <div><span>Engineer:</span> ${esc(WIZ.lab.engineer)}</div>
+      <div><span>Date:</span> ${esc(WIZ.lab.date)}</div>
+      <div><span>Verification type:</span> ${WIZ.inService?'In-Service':'Initial'}</div>
+      <div><span>Overall result:</span> <span class="badge ${result==='PASS'?'pass':result==='FAIL'?'fail':'pending'}">${result}</span></div>
+    </div>
+  </div>
+  ${errors.length? `<div class="panel"><h3>Validation Engine</h3>${errors.map(e=>`<div class="section-note">⚠ ${esc(e)}</div>`).join('')}</div>` : `<div class="panel"><h3>Validation Engine</h3><div class="section-note" style="background:var(--green-bg);color:var(--green);">✓ All checks passed — missing values, ranges, and environmental limits look correct.</div></div>`}
+  <div class="panel">
+    <h3>Engineer Remarks</h3>
+    <div class="f"><textarea onchange="WIZ.remarksEngineer=this.value" placeholder="Overall summary remarks for this report...">${esc(WIZ.remarksEngineer)}</textarea></div>
+  </div>`;
+}
+
+function wizNext(){
+  if(WIZ.step===0){
+    const sel=document.getElementById('wiz_instrument');
+    if(sel) WIZ.instrumentId=sel.value;
+    if(!WIZ.instrumentId){ alert('Please select an instrument to continue.'); return; }
+  }
+  if(WIZ.step===1){
+    WIZ.lab.laboratory=document.getElementById('lb_lab').value;
+    WIZ.lab.engineer=document.getElementById('lb_eng').value;
+    WIZ.lab.date=document.getElementById('lb_date').value;
+    WIZ.lab.temperature=document.getElementById('lb_temp').value;
+    WIZ.lab.humidity=document.getElementById('lb_hum').value;
+    WIZ.lab.pressure=document.getElementById('lb_pres').value;
+    WIZ.lab.voltage=document.getElementById('lb_volt').value;
+    WIZ.lab.duration=document.getElementById('lb_dur').value;
+    WIZ.inService = document.getElementById('lb_inservice').value==='true';
+    if(!WIZ.lab.date || WIZ.lab.temperature===''||WIZ.lab.humidity===''){ alert('Please complete all required lab condition fields.'); return; }
+  }
+  WIZ.step++;
+  render();
+}
+function wizPrev(){ WIZ.step--; render(); }
+function cancelWizard(){ if(confirm('Discard this report draft?')){ WIZ=null; navigate('repository'); } }
+
+function submitReport(){
+  const inst = DB.instruments.find(i=>i.id===WIZ.instrumentId);
+  if(!inst){ alert('No instrument selected.'); return; }
+  const result = computeOverallResult();
+  const id = uid('rep');
+  const report = {
+    id,
+    reportNo: 'RPT-'+new Date().getFullYear()+'-'+String(DB.reports.length+1).padStart(4,'0'),
+    instrumentId: inst.id,
+    manufacturerId: inst.manufacturerId,
+    lab: {...WIZ.lab},
+    inService: WIZ.inService,
+    tests: JSON.parse(JSON.stringify(WIZ.tests)),
+    remarksEngineer: WIZ.remarksEngineer,
+    remarksReviewer:'',
+    remarksApprover:'',
+    finalDecision: result==='INCOMPLETE' ? 'FAIL' : result,
+    status: 'Engineer Completed',
+    attachments: [],
+    createdAt: nowStr(),
+    createdBy: CUR_USER.id,
+    history: [{status:'Draft', by:CUR_USER.name, time:nowStr()},{status:'Engineer Completed', by:CUR_USER.name, time:nowStr()}],
+  };
+  DB.reports.unshift(report);
+  logAction('Report created', report.reportNo+' — '+inst.name);
+  saveDB();
+  WIZ=null;
+  navigate('reportview',{id});
+}
+
+/* =========================================================================
+   REPOSITORY
+   ========================================================================= */
+function pageRepository(){
+  const q = ROUTE.params.q || '';
+  const statusFilter = ROUTE.params.status || '';
+  let rows = DB.reports.slice();
+  if(q){
+    const ql=q.toLowerCase();
+    rows = rows.filter(r=>{
+      const inst=DB.instruments.find(i=>i.id===r.instrumentId);
+      const mf = inst? DB.manufacturers.find(m=>m.id===inst.manufacturerId):null;
+      return [r.reportNo, inst?inst.name:'', inst?inst.model:'', mf?mf.name:'', r.lab.engineer, r.lab.date, r.status]
+        .join(' ').toLowerCase().includes(ql);
+    });
+  }
+  if(statusFilter) rows = rows.filter(r=>r.status===statusFilter);
+
+  return `
+  <div class="page-head">
+    <div><h2>Digital Repository</h2><div class="sub">${rows.length} report${rows.length===1?'':'s'} found</div></div>
+    <div class="actions"><button class="btn" onclick="navigate('newreport')">+ New Report</button></div>
+  </div>
+  <div class="toolbar">
+    <input id="repo_q" placeholder="Search by report ID, manufacturer, instrument, model, engineer, date..." value="${esc(q)}" onkeyup="if(event.key==='Enter') repoSearch()">
+    <select id="repo_status" onchange="repoSearch()">
+      <option value="">All statuses</option>
+      ${WF_STAGES.map(s=>`<option ${statusFilter===s?'selected':''}>${s}</option>`).join('')}
+    </select>
+    <button class="btn secondary" onclick="repoSearch()">Search</button>
+  </div>
+  <div class="panel" style="padding:0;">
+    <table class="data-table">
+      <thead><tr><th>Report No.</th><th>Instrument</th><th>Manufacturer</th><th>Engineer</th><th>Date</th><th>Status</th><th>Result</th><th></th></tr></thead>
+      <tbody>
+        ${rows.length? rows.map(r=>{
+          const inst=DB.instruments.find(i=>i.id===r.instrumentId);
+          const mf = inst? DB.manufacturers.find(m=>m.id===inst.manufacturerId):null;
+          return `<tr>
+            <td class="num">${esc(r.reportNo)}</td>
+            <td>${esc(inst?inst.name:'—')}</td>
+            <td>${esc(mf?mf.name:'—')}</td>
+            <td>${esc(r.lab.engineer)}</td>
+            <td>${fmtDate(r.lab.date)}</td>
+            <td><span class="badge ${statusBadgeClass(r.status)}">${esc(r.status)}</span></td>
+            <td><span class="badge ${r.finalDecision==='PASS'?'pass':'fail'}">${esc(r.finalDecision)}</span></td>
+            <td><button class="icon-btn" onclick="navigate('reportview',{id:'${r.id}'})">Open</button></td>
+          </tr>`;
+        }).join('') : `<tr class="empty-row"><td colspan="8">No reports match your search.</td></tr>`}
+      </tbody>
+    </table>
+  </div>`;
+}
+function statusBadgeClass(s){
+  if(s==='Approved') return 'approved';
+  if(s==='Draft') return 'draft';
+  return 'pending';
+}
+function repoSearch(){
+  navigate('repository', {q:document.getElementById('repo_q').value, status:document.getElementById('repo_status').value});
+}
+
+/* =========================================================================
+   REPORT VIEW / WORKFLOW / EXPORT
+   ========================================================================= */
+function pageReportView(id){
+  const r = DB.reports.find(x=>x.id===id);
+  if(!r) return '<div class="empty-state">Report not found.</div>';
+  const inst = DB.instruments.find(i=>i.id===r.instrumentId);
+  const mf = DB.manufacturers.find(m=>m.id===inst.manufacturerId);
+  const stageIdx = WF_STAGES.indexOf(r.status);
+
+  const canAdvance = canUserAdvance(r);
+
+  return `
+  <div class="page-head no-print">
+    <div><h2>${esc(r.reportNo)}</h2><div class="sub">${esc(inst.name)} — ${esc(inst.serial)}</div></div>
+    <div class="actions">
+      <button class="btn secondary" onclick="navigate('repository')">← Back</button>
+      <button class="btn secondary" onclick="window.print()">Export PDF</button>
+      <button class="btn secondary" onclick="exportWord('${r.id}')">Export Word</button>
+      ${canAdvance ? `<button class="btn" onclick="openAdvanceModal('${r.id}')">${nextActionLabel(r.status)}</button>`:''}
+    </div>
+  </div>
+
+  <div class="panel no-print">
+    <h3>Approval Workflow</h3>
+    <div class="wf-track">
+      ${WF_STAGES.map((s,i)=>`<div class="wf-node ${i<stageIdx?'done':i===stageIdx?'current':''}"><div class="dot">${i<stageIdx?'✓':i+1}</div><div class="lbl">${s}</div></div>`).join('')}
+    </div>
+    <div style="font-size:12px;color:var(--ink-soft);">
+      ${r.history.map(h=>`${esc(h.status)} — ${esc(h.by)}, ${fmtDateTime(h.time)}`).join(' · ')}
+    </div>
+  </div>
+
+  <div class="report-doc" id="reportDoc">
+    <h1>OIML R76 Calibration Report</h1>
+    <div class="rd-sub">${esc(r.reportNo)} · ${esc(DB.settings.ruleVersion)} · ${r.inService?'In-Service Verification':'Initial Verification'}</div>
+
+    <h4>Instrument Details</h4>
+    <div class="kv">
+      <div><span>Name:</span> ${esc(inst.name)}</div>
+      <div><span>Type:</span> ${esc(inst.type)}</div>
+      <div><span>Model:</span> ${esc(inst.model)}</div>
+      <div><span>Serial No.:</span> ${esc(inst.serial)}</div>
+      <div><span>Capacity:</span> ${esc(inst.capacity)}</div>
+      <div><span>Min Capacity:</span> ${esc(inst.minCapacity)}</div>
+      <div><span>e:</span> ${esc(inst.e)}</div>
+      <div><span>Accuracy Class:</span> ${esc(inst.accuracyClass)}</div>
+      <div><span>Display Type:</span> ${esc(inst.display)}</div>
+      <div><span>Power Supply:</span> ${esc(inst.power)}</div>
+      <div><span>Software Version:</span> ${esc(inst.softwareVersion)}</div>
+      <div><span>Firmware Version:</span> ${esc(inst.firmwareVersion)}</div>
+    </div>
+
+    <h4>Manufacturer Details</h4>
+    <div class="kv">
+      <div><span>Name:</span> ${esc(mf.name)}</div>
+      <div><span>Country:</span> ${esc(mf.country)}</div>
+      <div><span>Contact:</span> ${esc(mf.contact)}</div>
+      <div><span>Phone:</span> ${esc(mf.phone)}</div>
+      <div><span>Email:</span> ${esc(mf.email)}</div>
+      <div><span>License No.:</span> ${esc(mf.license)}</div>
+    </div>
+
+    <h4>Environmental Conditions</h4>
+    <div class="kv">
+      <div><span>Laboratory:</span> ${esc(r.lab.laboratory)}</div>
+      <div><span>Engineer:</span> ${esc(r.lab.engineer)}</div>
+      <div><span>Date:</span> ${fmtDate(r.lab.date)}</div>
+      <div><span>Temperature:</span> ${esc(r.lab.temperature)} °C</div>
+      <div><span>Humidity:</span> ${esc(r.lab.humidity)} %RH</div>
+      <div><span>Pressure:</span> ${esc(r.lab.pressure)} hPa</div>
+      <div><span>Voltage:</span> ${esc(r.lab.voltage)} V</div>
+      <div><span>Test Duration:</span> ${esc(r.lab.duration)} min</div>
+    </div>
+
+    <h4>Test Observations &amp; Calculations</h4>
+    ${TEST_TYPES.map(t=>renderTestReportBlock(r,t,inst)).join('')}
+
+    <h4>Remarks</h4>
+    <div class="kv" style="grid-template-columns:1fr;">
+      <div><span>Engineer:</span> ${esc(r.remarksEngineer)||'—'}</div>
+      <div><span>Reviewer:</span> ${esc(r.remarksReviewer)||'—'}</div>
+      <div><span>Approver:</span> ${esc(r.remarksApprover)||'—'}</div>
+    </div>
+
+    <div class="final-decision ${r.finalDecision==='PASS'?'pass':'fail'}">FINAL DECISION: ${esc(r.finalDecision)}</div>
+
+    <div class="sig-row">
+      <div class="sig-box">Engineer<br>${esc(r.lab.engineer)}</div>
+      <div class="sig-box">Reviewer<br>${esc(r.reviewedBy||'Pending')}</div>
+      <div class="sig-box">Approver<br>${esc(r.approvedBy||'Pending')}</div>
+    </div>
+  </div>`;
+}
+function renderTestReportBlock(r,t,inst){
+  const st = r.tests[t.id];
+  if(!st) return '';
+  const needsCalc = !['visual','software','environmental'].includes(t.id);
+  const hasData = needsCalc ? st.observations.some(o=>o.nominal!=='' && o.observed!=='') : (st.remark && st.remark.trim());
+  if(!hasData && !(st.engRemark && st.engRemark.trim())) return '';
+  let body='';
+  if(needsCalc){
+    const validRows = st.observations.filter(o=>o.nominal!=='' && o.observed!=='');
+    if(validRows.length){
+      body = `<table><thead><tr><th>Nominal</th><th>Observed</th><th>Error</th><th>MPE</th><th>Result</th></tr></thead><tbody>
+      ${validRows.map(o=>{
+        const c = calcTestRow(o.nominal,o.observed,inst.accuracyClass,inst.e,r.inService);
+        return `<tr><td>${esc(o.nominal)}</td><td>${esc(o.observed)}</td><td>${c.valid?c.observedError.toFixed(4):'—'}</td><td>${c.valid&&c.mpeValue!==null?c.mpeValue.toFixed(4):'—'}</td><td>${c.valid&&c.pass!==null?(c.pass?'PASS':'FAIL'):'—'}</td></tr>`;
+      }).join('')}
+      </tbody></table>`;
+    }
+  } else if(st.remark){
+    body = `<div style="margin-bottom:6px;">${esc(st.remark)}</div>`;
+  }
+  return `<div style="margin-bottom:14px;"><strong style="font-size:12.5px;">${esc(t.name)}</strong>${body}${st.engRemark?`<div style="color:#666;font-size:11.5px;">Note: ${esc(st.engRemark)}</div>`:''}</div>`;
+}
+
+function canUserAdvance(r){
+  if(r.status==='Approved') return false;
+  const role = CUR_USER.role;
+  if(r.status==='Engineer Completed' && (role==='Reviewer'||role==='Admin')) return true;
+  if(r.status==='Reviewer' && (role==='Approver'||role==='Admin')) return true;
+  return false;
+}
+function nextActionLabel(status){
+  if(status==='Engineer Completed') return 'Send for Review';
+  if(status==='Reviewer') return 'Approve Report';
+  return 'Advance';
+}
+function openAdvanceModal(id){
+  const r = DB.reports.find(x=>x.id===id);
+  const nextStage = r.status==='Engineer Completed' ? 'Reviewer' : 'Approved';
+  const roleLabel = r.status==='Engineer Completed' ? 'Reviewer' : 'Approver';
+  openModal(`
+    <h3>${nextActionLabel(r.status)} <span class="close" onclick="closeModal()">&times;</span></h3>
+    <p style="font-size:13px;color:var(--ink-soft);">This will move report ${esc(r.reportNo)} to stage: <strong>${esc(nextStage)}</strong>.</p>
+    <div class="f"><label>${esc(roleLabel)} Remarks</label><textarea id="adv_remark" placeholder="Add your remarks..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="advanceReport('${id}')">Confirm</button>
+    </div>
+  `);
+}
+function advanceReport(id){
+  const r = DB.reports.find(x=>x.id===id);
+  const remark = document.getElementById('adv_remark').value.trim();
+  if(r.status==='Engineer Completed'){
+    r.status='Reviewer'; r.remarksReviewer=remark; r.reviewedBy=CUR_USER.name;
+  } else if(r.status==='Reviewer'){
+    r.status='Approved'; r.remarksApprover=remark; r.approvedBy=CUR_USER.name;
+  }
+  r.history.push({status:r.status, by:CUR_USER.name, time:nowStr()});
+  logAction('Report status changed', r.reportNo+' → '+r.status);
+  saveDB(); closeModal(); render();
+}
+
+function exportWord(id){
+  const r = DB.reports.find(x=>x.id===id);
+  const html = document.getElementById('reportDoc').outerHTML;
+  const doc = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+  <head><meta charset="utf-8"><title>${esc(r.reportNo)}</title>
+  <style>body{font-family:Calibri,Arial,sans-serif;} table{border-collapse:collapse;} td,th{border:1px solid #999;padding:5px;} h4{border-bottom:1px solid #333;padding-bottom:4px;}</style>
+  </head><body>${html}</body></html>`;
+  const blob = new Blob(['\ufeff', doc], {type:'application/msword'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=r.reportNo+'.doc'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  logAction('Report exported', r.reportNo+' (Word)');
+  saveDB();
+}
+
+/* =========================================================================
+   AUDIT TRAIL
+   ========================================================================= */
+function pageAudit(){
+  const rows = DB.auditLog;
+  return `
+  <div class="page-head">
+    <div><h2>Audit Trail</h2><div class="sub">${rows.length} recorded event${rows.length===1?'':'s'}</div></div>
+  </div>
+  <div class="panel" style="padding:0;">
+    <table class="data-table">
+      <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Detail</th></tr></thead>
+      <tbody>
+        ${rows.length? rows.map(a=>`
+          <tr><td class="num">${fmtDateTime(a.time)}</td><td>${esc(a.userName)}</td><td>${esc(a.action)}</td><td class="audit-diff">${esc(a.detail||'')}</td></tr>
+        `).join('') : `<tr class="empty-row"><td colspan="4">No activity recorded yet.</td></tr>`}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+/* =========================================================================
+   SETTINGS
+   ========================================================================= */
+function pageSettings(){
+  if(CUR_USER.role!=='Admin') return '<div class="empty-state">Only Administrators can access Settings.</div>';
+  return `
+  <div class="page-head"><div><h2>Settings</h2><div class="sub">Administration</div></div></div>
+
+  <div class="panel">
+    <h3>Users &amp; Roles</h3>
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Username</th><th>Role</th><th></th></tr></thead>
+      <tbody>
+        ${DB.users.map(u=>`<tr><td>${esc(u.name)}</td><td class="num">${esc(u.username)}</td><td><span class="badge role">${esc(u.role)}</span></td>
+          <td><button class="icon-btn" onclick="openUserForm('${u.id}')">Edit</button>
+              ${u.id!==CUR_USER.id?`<button class="icon-btn" onclick="deleteUser('${u.id}')">Delete</button>`:''}</td></tr>`).join('')}
+      </tbody>
+    </table>
+    <button class="btn secondary" style="margin-top:12px;" onclick="openUserForm()">+ New User</button>
+  </div>
+
+  <div class="panel">
+    <h3>Laboratories</h3>
+    <table class="data-table"><tbody>
+      ${DB.settings.labs.map((l,i)=>`<tr><td>${esc(l)}</td><td style="text-align:right;"><button class="icon-btn" onclick="removeLab(${i})">Remove</button></td></tr>`).join('')}
+    </tbody></table>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <input id="newLabName" placeholder="New laboratory name" style="flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:2px;">
+      <button class="btn secondary" onclick="addLab()">Add</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>OIML Rule Version</h3>
+    <div class="f" style="max-width:420px;"><label>Active Rule Set</label><input id="ruleVersion" value="${esc(DB.settings.ruleVersion)}" onchange="DB.settings.ruleVersion=this.value; saveDB();"></div>
+  </div>
+
+  <div class="panel">
+    <h3>MPE Table (Maximum Permissible Error, in units of e)</h3>
+    <div class="section-note">Simplified starting configuration — confirm against your governing OIML R76 edition before relying on these values for formal certification.</div>
+    <table class="data-table">
+      <thead><tr><th>Accuracy Class</th><th>Load Band</th><th>MPE (× e)</th><th></th></tr></thead>
+      <tbody>
+      ${DB.settings.mpeTable.map((row,i)=>`
+        <tr>
+          <td>${esc(row.accuracyClass)}</td>
+          <td>${esc(row.band)}</td>
+          <td><input type="number" step="any" value="${row.mpeE}" style="width:80px;padding:5px 7px;border:1px solid var(--line);border-radius:2px;" onchange="updateMPE(${i},this.value)"></td>
+          <td></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+function updateMPE(i,val){ DB.settings.mpeTable[i].mpeE = parseFloat(val); saveDB(); logAction('MPE table updated', DB.settings.mpeTable[i].accuracyClass+' '+DB.settings.mpeTable[i].band); }
+function addLab(){ const v=document.getElementById('newLabName').value.trim(); if(!v) return; DB.settings.labs.push(v); saveDB(); logAction('Laboratory added', v); render(); }
+function removeLab(i){ const name=DB.settings.labs[i]; DB.settings.labs.splice(i,1); saveDB(); logAction('Laboratory removed', name); render(); }
+function openUserForm(id){
+  const u = id? DB.users.find(x=>x.id===id):null;
+  openModal(`
+    <h3>${u?'Edit User':'New User'} <span class="close" onclick="closeModal()">&times;</span></h3>
+    <div class="form-grid">
+      <div class="f"><label>Full Name <span class="req">*</span></label><input id="us_name" value="${esc(u?u.name:'')}"></div>
+      <div class="f"><label>Username <span class="req">*</span></label><input id="us_user" value="${esc(u?u.username:'')}"></div>
+      <div class="f"><label>Password <span class="req">*</span></label><input id="us_pass" value="${esc(u?u.password:'')}"></div>
+      <div class="f"><label>Role <span class="req">*</span></label><select id="us_role">${ROLES.map(r=>`<option ${u&&u.role===r?'selected':''}>${r}</option>`).join('')}</select></div>
+    </div>
+    <div id="us_err" class="f"><span class="err"></span></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveUser('${id||''}')">Save</button>
+    </div>
+  `);
+}
+function saveUser(id){
+  const name=document.getElementById('us_name').value.trim();
+  const username=document.getElementById('us_user').value.trim();
+  const password=document.getElementById('us_pass').value;
+  const role=document.getElementById('us_role').value;
+  if(!name||!username||!password){ document.querySelector('#us_err .err').textContent='All fields are required.'; return; }
+  if(DB.users.some(u=>u.username===username && u.id!==id)){ document.querySelector('#us_err .err').textContent='Username already exists.'; return; }
+  if(id){ Object.assign(DB.users.find(x=>x.id===id), {name,username,password,role}); logAction('User updated', name); }
+  else{ DB.users.push({id:uid('u'), name,username,password,role}); logAction('User created', name+' ('+role+')'); }
+  saveDB(); closeModal(); render();
+}
+function deleteUser(id){
+  const u=DB.users.find(x=>x.id===id);
+  if(!confirm('Delete user "'+u.name+'"?')) return;
+  DB.users=DB.users.filter(x=>x.id!==id);
+  logAction('User deleted', u.name);
+  saveDB(); render();
+}
+
+/* =========================================================================
+   INIT
+   ========================================================================= */
+DB = loadDB();
+saveDB();
+document.getElementById('loginPass').addEventListener('keyup', e=>{ if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>
